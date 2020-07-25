@@ -1,0 +1,43 @@
+.dnd5e.sheet .filter-list {
+    max-width: 100%;
+}
+
+.dnd5e.sheet .filter-list .custom-category{
+    flex-grow: 2;
+}
+
+.dnd5e.sheet.actor .inventory-list .item-controls .remove-category {
+    flex: 0 0 100%;
+}
+
+.dnd5e.sheet.actor .inventory-list .inv-plus-stuff {
+    max-width:140px;
+    opacity:0.1;
+}
+
+.dnd5e.sheet.actor .inventory-list .inv-plus-stuff:hover {
+    opacity:1;
+}
+
+
+.dnd5e.sheet.actor .inventory-list .inv-plus-stuff div {
+    flex-grow:1;
+    max-width:120px;
+}
+
+.dnd5e.sheet.actor .inventory-list .inv-plus-stuff a {
+    flex-grow:0;
+}
+
+.dnd5e.sheet.actor .inventory-list .inv-plus-stuff input{
+    height:16px;
+    width:16px;
+}
+
+.inv-plus-dialog {
+    margin-bottom: 5px;
+}
+
+.inv-plus-dialog input{
+    margin-top: 3px;
+}
