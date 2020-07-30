@@ -46,7 +46,7 @@ class InventoryPlus {
             }
 
             // droping item outside inventory list
-            let targetLi = $(event.toElement).parents('li')[0];
+            let targetLi = $(event.target).parents('li')[0];
             if (targetLi === undefined || targetLi.className === undefined) {
                 return oldOnDropItem.bind(this)(event, data);
             }
@@ -56,19 +56,28 @@ class InventoryPlus {
             let dropedItem = this.object.getOwnedItem(id);
             
             let targetType = '';
-            if (targetLi.className.trim() === 'inventory-header flexrow') {
+            if (targetLi.className.trim().indexOf('inventory-header') !== -1) {
                 targetType = $(targetLi).find('.item-control')[0].dataset.type;
-            } else if (targetLi.className.trim() == 'item flexrow') {
+            } else if (targetLi.className.trim().indexOf('item') !== -1) {
                 let itemId = targetLi.dataset.itemId;
                 let item = this.object.getOwnedItem(itemId);
-                targetType = InventoryPlus.getItemType(item.data);
+                targetType = this.inventoryPlus.getItemType(item.data);
             }
 
             // changing item list
-            let itemType = InventoryPlus.getItemType(data);
+            let itemType = this.inventoryPlus.getItemType(data.data);
             if (itemType !== targetType) {
-                await dropedItem.update({ 'flags.inventory-plus.category': targetType });
-                itemType = targetType;
+                let categoryWeight = this.inventoryPlus.getCategoryItemWeight(targetType);
+                let itemWeight = dropedItem.data.totalWeight;
+                let maxWeight = Number(this.inventoryPlus.customCategorys[targetType].maxWeight ? this.inventoryPlus.customCategorys[targetType].maxWeight : 0);
+
+                if (maxWeight == NaN || maxWeight <= 0 || maxWeight >= (categoryWeight + itemWeight)) {
+                    await dropedItem.update({ 'flags.inventory-plus.category': targetType });
+                    itemType = targetType;
+                } else {
+                    ui.notifications.warn("Item exceedes categorys max weight");
+                    return;
+                }
             }
 
             // reordering items
@@ -76,7 +85,7 @@ class InventoryPlus {
             // Get the drag source and its siblings
             let source = dropedItem;
             let siblings = this.object.items.filter(i => {
-                let type = InventoryPlus.getItemType(i.data);
+                let type = this.inventoryPlus.getItemType(i.data);
                 return (type === itemType) && (i.data._id !== source.data._id)
             });
             // Get the drop target
@@ -117,12 +126,12 @@ class InventoryPlus {
         let actorFlag = this.actor.getFlag('inventory-plus', 'categorys');
         if (actorFlag === undefined) {
             this.customCategorys = {
-                weapon: { label: "DND5E.ItemTypeWeaponPl", dataset: { type: "weapon" }, sortFlag: 1000, ignoreWeight: false },
-                equipment: { label: "DND5E.ItemTypeEquipmentPl", dataset: { type: "equipment" }, sortFlag: 2000, ignoreWeight: false },
-                consumable: { label: "DND5E.ItemTypeConsumablePl", dataset: { type: "consumable" }, sortFlag: 3000, ignoreWeight: false },
-                tool: { label: "DND5E.ItemTypeToolPl", dataset: { type: "tool" }, sortFlag: 4000, ignoreWeight: false },
-                backpack: { label: "DND5E.ItemTypeContainerPl", dataset: { type: "backpack" }, sortFlag: 5000, ignoreWeight: false },
-                loot: { label: "DND5E.ItemTypeLootPl", dataset: { type: "loot" }, sortFlag: 6000, ignoreWeight: false }
+                weapon: { label: "DND5E.ItemTypeWeaponPl", dataset: { type: "weapon" }, sortFlag: 1000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false },
+                equipment: { label: "DND5E.ItemTypeEquipmentPl", dataset: { type: "equipment" }, sortFlag: 2000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  },
+                consumable: { label: "DND5E.ItemTypeConsumablePl", dataset: { type: "consumable" }, sortFlag: 3000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  },
+                tool: { label: "DND5E.ItemTypeToolPl", dataset: { type: "tool" }, sortFlag: 4000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  },
+                backpack: { label: "DND5E.ItemTypeContainerPl", dataset: { type: "backpack" }, sortFlag: 5000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  },
+                loot: { label: "DND5E.ItemTypeLootPl", dataset: { type: "loot" }, sortFlag: 6000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  }
             };
         } else {
             this.customCategorys = duplicate(actorFlag);
@@ -134,16 +143,17 @@ class InventoryPlus {
         /*
          *  create custom category 
          */
-        let addCategoryBtn = $('<a class="custom-category"><i class="fas fa-plus"></i> Add Custom Category</a>').click(ev => {
+        let addCategoryBtn = $('<a class="custom-category"><i class="fas fa-plus"></i> Add Custom Category</a>').click(async ev => {
+            let template = await renderTemplate('modules/inventory-plus/templates/categoryDialog.hbs', {});
             let d = new Dialog({
                 title: "Creating new Inventory Category",
-                content: '<div class="inv-plus-dialog">New Category Name: <input class="cat-name" type="text"></br></div>',
+                content: template,
                 buttons: {
                     accept: {
                         icon: '<i class="fas fa-check"></i>',
                         label: "Accept",
                         callback: async html => {
-                            let input = html.find('input')[0].value;
+                            let input = html.find('input');
                             this.createCategory(input);
                         }
                     },
@@ -188,19 +198,15 @@ class InventoryPlus {
             if (this.customCategorys[type] === undefined) {
                 return;
             }
-            // ignore weight
-            let useWeightSelected = this.customCategorys[type].ignoreWeight !== false ? 'checked' : '';
-            let useWeightBtn = $(`<div class="flexrow"><input class="ignore-weight" type="checkbox" ${useWeightSelected} data-type="${type}"> ignore Weight</div>`).click(ev => {
-                let ignoreWeight = ev.target.checked;
-                let type = ev.target.dataset.type;
-                if (type) {
-                    this.customCategorys[type].ignoreWeight = ignoreWeight;
-                    this.saveCategorys();
-                }
+
+            // toggle item visibility
+            let arrow = this.customCategorys[type].collapsed === true ? 'right' : 'down';
+            let toggleBtn = $(`<a class="toggle-collapse"><i class="fas fa-caret-${arrow}"></i></a>`).click(ev => {
+                this.customCategorys[type].collapsed = !this.customCategorys[type].collapsed;
+                this.saveCategorys();
             });
-            extraStuff.append(useWeightBtn);
-
-
+            header.find('h3').before(toggleBtn);
+            
             // reorder category
             if (this.getLowestSortFlag() !== this.customCategorys[type].sortFlag) {
                 let upBtn = $(`<a class="inv-plus-stuff shuffle-up" title="Move category up"><i class="fas fa-chevron-up"></i></a>`).click(() => this.changeCategoryOrder(type, true));
@@ -211,12 +217,49 @@ class InventoryPlus {
                 extraStuff.append(downBtn);
             }
 
-            // hide by default
-            /*header.hover(evIn => {
-                $(evIn.target).find('.inv-plus-stuff').show();
-            }, evOut => {
-                $(evOut.target).find('.inv-plus-stuff').hide();
-            });*/
+            // edit category 
+            let editCategoryBtn = $('<a class="inv-plus-stuff customize-category"><i class="fas fa-edit"></i></a>').click(async ev => {
+                let template = await renderTemplate('modules/inventory-plus/templates/categoryDialog.hbs', this.customCategorys[type]);
+                let d = new Dialog({
+                    title: "Edit Inventory Category",
+                    content: template,
+                    buttons: {
+                        accept: {
+                            icon: '<i class="fas fa-check"></i>',
+                            label: "Accept",
+                            callback: async html => {
+                                let inputs = html.find('input');
+                                for (let input of inputs) {
+                                    let value = input.type === 'checkbox' ? input.checked : input.value;
+                                    if (input.dataset.dtype === "Number") {
+                                        value = Number(value) > 0 ? Number(value) : 0;
+                                    }
+                                    this.customCategorys[type][input.name] = value;
+                                }
+                                this.saveCategorys();
+                            }
+                        },
+                        cancle: {
+                            icon: '<i class="fas fa-times"></i>',
+                            label: "Cancel"
+                        }
+                    },
+                    default: "accept",
+                });
+                d.render(true);
+            });
+            extraStuff.append(editCategoryBtn);
+
+            // hide collapsed category items
+            if (this.customCategorys[type].collapsed === true) {
+                header.next().hide();
+            }
+
+            if (this.customCategorys[type].maxWeight > 0) {
+                let weight = this.getCategoryItemWeight(type);
+                let weightString = $(`<label class="category-weight">( ${weight}/${this.customCategorys[type].maxWeight}  ${game.i18n.localize('DND5E.AbbreviationLbs')})</label>`);
+                header.find('h3').append(weightString);
+            }
         }
     }
 
@@ -229,10 +272,10 @@ class InventoryPlus {
 
         for (let section of inventory) {
             for (let item of section.items) {
-                let type = InventoryPlus.getItemType(item);
-                /*if (sections[type] === undefined) {
+                let type = this.getItemType(item);
+                if (sections[type] === undefined) {
                     type = item.type;
-                }*/
+                }
                 sections[type].items.push(item);
             }
         }
@@ -247,35 +290,29 @@ class InventoryPlus {
         return sections;
     }
 
-    createCategory(title) {
-        if (title === undefined || title === '') {
+    createCategory(inputs) {
+        let newCategory = {}
+
+        for (let input of inputs) {
+            let value = input.type === 'checkbox' ? input.checked : input.value;
+            if (input.dataset.dtype === "Number") {
+                value = Number(value) > 0 ? Number(value) : 0;
+            }
+            newCategory[input.name] = value;
+        }
+
+
+        if (newCategory.label === undefined || newCategory.label === '') {
             ui.notifications.error('Could not create Category as no name was specified');
             return;
         }
-        if (title.match(/^\d+$/)) {
-            ui.notifications.error('Could not create Category as the name has only numbers');
-            return;
-        }
-        let key = title.replace(/[^一-龠ぁ-ゔァ-ヴーa-zA-Z0-9ａ-ｚＡ-Ｚ０-９々〆〤]/g, '').replace("'", '').replace(/ /g, '');
 
-        if (key === undefined) {
-            ui.notifications.error('Could not create Category as the name is invalid');
-            return;
-        }
+        let key = this.generateCategoryId();
 
-        if (this.customCategorys[key] !== undefined) {
-            ui.notifications.error(`Could not create Category as a Category with the same key. ${key} already exists.`);
-            return;
-        }
-
-        let category = {
-            label: title,
-            dataset: { type: key },
-            sortFlag: this.getHighestSortFlag() + 1000,
-            ignoreWeight: false
-        }
-
-        this.customCategorys[key] = category;
+        newCategory.dataset = { type: key };
+        newCategory.collapsed = false;
+        newCategory.sortFlag = this.getHighestSortFlag() + 1000;
+        this.customCategorys[key] = newCategory;
         this.saveCategorys();
     }
 
@@ -283,7 +320,7 @@ class InventoryPlus {
         let catType = ev.target.dataset.type;
         let changedItems = [];
         for (let item of this.actor.items) {
-            let type = InventoryPlus.getItemType(item.data);
+            let type = this.getItemType(item.data);
             if (type === catType) {
                 //await item.unsetFlag('inventory-plus', 'category');
                 changedItems.push({
@@ -368,12 +405,33 @@ class InventoryPlus {
         return lowest;
     }
 
-    static getItemType(item) {
+    generateCategoryId() {
+        let id = '';
+        let iterations = 100;
+        do {
+            id = Math.random().toString(36).substring(7);
+            iterations--;
+        } while (this.customCategorys[id] !== undefined && iterations > 0 && id.length>=5)
+
+        return id;
+    }
+
+    getItemType(item) {
         let type = getProperty(item, 'flags.inventory-plus.category');
-        if (type === undefined) {
+        if (type === undefined || this.customCategorys[type] === undefined) {
             type = item.type;
         }
         return type;
+    }
+
+    getCategoryItemWeight(type) {
+        let weight = 0;
+        for (let i of this.actor.items) {
+            if (type === this.getItemType(i.data)) {
+                weight += i.data.totalWeight;
+            }
+        }
+        return weight;
     }
 
     static calculateWeight(inventory) {
@@ -384,6 +442,9 @@ class InventoryPlus {
                 for (let i of section.items) {
                     customWeight += i.data.weight;
                 }
+            }
+            if (Number(section.ownWeight) > 0) {
+                customWeight += Number(section.ownWeight);
             }
         }
         return customWeight;

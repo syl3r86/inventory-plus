@@ -1,0 +1,14 @@
+<dl class="inv-plus-dialog">
+    <dt>Category Name: </dt>
+    <dd><input name="label" type="text" value="{{label}}"></dd>
+    <dt title="Stops any item from being droped into the category if the combined itemweigth would be increased past this number.">Max Weight: </dt>
+    <dd title="Stops any item from being droped into the category if the combined itemweigth would be increased past this number.">
+        <input name="maxWeight" type="text" data-dType="Number" value="{{maxWeight}}"></dd>
+    <dt title="If set to any number above 0, the total weight carried will be increased by that ammount.">Inherent Weight: </dt>
+    <dd title="If set to any number above 0, the total weight carried will be increased by that ammount.">
+        <input name="ownWeight" type="text" data-dType="Number" value="{{ownWeight}}"></dd>
+    <dt title="If checked, the weight of items in this category will not be calculated towards Carrying Capacity.">Ignore Item Weight: </dt>
+    <dd title="If checked, the weight of items in this category will not be calculated towards Carrying Capacity.">
+        <input name="ignoreWeight" type="checkbox" {{#if ignoreWeight}}checked{{/if}}></dd>
+
+</dl>

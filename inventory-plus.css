@@ -11,14 +11,20 @@
 }
 
 .dnd5e.sheet.actor .inventory-list .inv-plus-stuff {
-    max-width:140px;
-    opacity:0.1;
+    flex:inherit;
+    opacity:0.5;
 }
 
-.dnd5e.sheet.actor .inventory-list .inv-plus-stuff:hover {
+.dnd5e.sheet.actor .inventory-list .inv-plus-stuff:hover, .dnd5e.sheet.actor .inventory-list .toggle-collapse:hover  {
     opacity:1;
 }
 
+.dnd5e.sheet.actor .inventory-list .toggle-collapse {
+    flex:0;
+    opacity:0.5;
+    font-size: 18px;
+    margin-left:4px;
+}
 
 .dnd5e.sheet.actor .inventory-list .inv-plus-stuff div {
     flex-grow:1;
@@ -27,6 +33,7 @@
 
 .dnd5e.sheet.actor .inventory-list .inv-plus-stuff a {
     flex-grow:0;
+    margin-right:2px;
 }
 
 .dnd5e.sheet.actor .inventory-list .inv-plus-stuff input{
@@ -34,10 +41,32 @@
     width:16px;
 }
 
-.inv-plus-dialog {
-    margin-bottom: 5px;
+.dnd5e.sheet.actor .inventory-list .category-weight {
+    margin-left: 5px;
+    opacity:0.5;
+    font-size:small;
 }
 
-.inv-plus-dialog input{
-    margin-top: 3px;
+.dnd5e.sheet.actor .inventory-list .category-weight:hover {
+    opacity:1;
+}
+
+
+.inv-plus-dialog {
+    margin: 5px;
+}
+
+.inv-plus-dialog dl {
+    margin:0 0 5px 0;
+}
+.inv-plus-dialog dt {
+    display: inline-block;
+    width: 40%;
+    line-height: 27px;
+    vertical-align: bottom;
+}
+.inv-plus-dialog dd {
+    display: inline-block;
+    margin-left: 5px;
+    width: calc(60% - 10px);
 }
