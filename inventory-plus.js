@@ -17,8 +17,16 @@ class InventoryPlus {
             let newInventory = InventoryPlus.processInventory(app, actor, data.inventory);
             data.inventory = newInventory;
 
-            data.data.attributes.encumbrance.value = InventoryPlus.calculateWeight(data.inventory);
-            data.data.attributes.encumbrance.pct = data.data.attributes.encumbrance.value / data.data.attributes.encumbrance.max * 100;
+            if ( game.settings.get("dnd5e", "currencyWeight") ) {
+                const currency = data.data.currency;
+                const numCoins = Object.values(currency).reduce((val, denom) => val += Math.max(denom, 0), 0);
+                const weightOfCoins = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight) / 10;
+                const weightInventory = Number(InventoryPlus.calculateWeight(data.inventory));
+                data.data.attributes.encumbrance.value = weightInventory + weightOfCoins;
+            }else{
+                data.data.attributes.encumbrance.value = InventoryPlus.calculateWeight(data.inventory);
+            }
+            data.data.attributes.encumbrance.pct = Math.min(data.data.attributes.encumbrance.value / data.data.attributes.encumbrance.max * 100,100);
             return data;
         }
     }
@@ -440,13 +448,14 @@ class InventoryPlus {
             let section = inventory[id];
             if (section.ignoreWeight !== true) {
                 for (let i of section.items) {
-                    customWeight += i.data.weight;
+                    customWeight += i.data.weight*i.data.quantity;
                 }
             }
             if (Number(section.ownWeight) > 0) {
                 customWeight += Number(section.ownWeight);
             }
         }
+        customWeight = Number(customWeight).toFixed(2);
         return customWeight;
     }
 
