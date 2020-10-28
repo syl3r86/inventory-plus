@@ -10,7 +10,7 @@
 	"packs": [],
     "url": "https://github.com/syl3r86/inventory-plus",
     "manifest": "https://raw.githubusercontent.com/syl3r86/inventory-plus/master/module.json",
-    "download": "https://github.com/syl3r86/inventory-plus/archive/master.zip",
+    "download": "https://github.com/syl3r86/inventory-plus/archive/v0.3.zip",
     "minimumCoreVersion": "0.6.5",
     "compatibleCoreVersion": "0.7.5"
 }
