@@ -2,7 +2,7 @@
 	"name": "inventory-plus",
 	"title": "Inventory+",
 	"description": "Enhances the default dnd5e sheets inventory to allow for reorganization",
-	"version": "0.2",
+	"version": "0.3",
 	"author": "Felix#6196",
 	"systems": ["dnd5e"],
 	"esmodules": ["./inventory-plus.js"],
@@ -12,5 +12,5 @@
     "manifest": "https://raw.githubusercontent.com/syl3r86/inventory-plus/master/module.json",
     "download": "https://github.com/syl3r86/inventory-plus/archive/master.zip",
     "minimumCoreVersion": "0.6.5",
-    "compatibleCoreVersion": "0.6.5"
+    "compatibleCoreVersion": "0.7.5"
 }
