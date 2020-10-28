@@ -1,3 +1,6 @@
+## v0.3
+ - fixes for weight calculation, thanks https://github.com/szefo09
+
 ## v0.2
  - fixed for Firefox
  - fixes for Tidy5e Sheet
