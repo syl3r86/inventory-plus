@@ -56,7 +56,8 @@ class InventoryPlus {
             let dropedItem = this.object.getOwnedItem(id);
             
             let targetType = '';
-            if (targetLi.className.trim().indexOf('inventory-header') !== -1) {
+            let targetCss = InventoryPlus.getCSSName("sub-header");
+            if (targetLi.className.trim().indexOf(targetCss) !== -1) {
                 targetType = $(targetLi).find('.item-control')[0].dataset.type;
             } else if (targetLi.className.trim().indexOf('item') !== -1) {
                 let itemId = targetLi.dataset.itemId;
@@ -187,7 +188,9 @@ class InventoryPlus {
         /*
          *  add extra header functions
          */
-        let headers = html.find('.inventory .inventory-header');
+
+        let targetCss = `.inventory .${InventoryPlus.getCSSName("sub-header")}`;
+        let headers = html.find(targetCss);
         for (let header of headers) {
             header = $(header);
             let type = header.find('.item-control')[0].dataset.type;
@@ -440,7 +443,6 @@ class InventoryPlus {
             let section = inventory[id];
             if (section.ignoreWeight !== true) {
                 for (let i of section.items) {
-                    console.log(i);
                     customWeight += i.totalWeight;
                 }
             }
@@ -459,6 +461,17 @@ class InventoryPlus {
         customWeight = Number(customWeight).toFixed(2);
 
         return customWeight;
+    }
+
+    static getCSSName(element) {
+        let version = game.system.data.version.split('.');
+        if (element === "sub-header") {
+            if (version[0] == 0 && version[1] <= 9 && version[2] <= 8) {
+                return "inventory-header";
+            } else {
+                return "items-header";
+            }
+        }
     }
 
     async saveCategorys() {

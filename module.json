@@ -2,7 +2,7 @@
 	"name": "inventory-plus",
 	"title": "Inventory+",
 	"description": "Enhances the default dnd5e sheets inventory to allow for reorganization",
-	"version": "0.3",
+	"version": "0.3.1",
 	"author": "Felix#6196",
 	"systems": ["dnd5e"],
 	"esmodules": ["./inventory-plus.js"],
