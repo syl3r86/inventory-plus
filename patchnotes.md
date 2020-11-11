@@ -1,3 +1,6 @@
+## v0.3.1
+ - fixed compability with dnd5e v1.1.1
+
 ## v0.3
  - fixes for weight calculation, thanks https://github.com/szefo09
 
