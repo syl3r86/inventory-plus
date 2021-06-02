@@ -1,3 +1,7 @@
+## v0.3.4
+ - fixed a bug preventing new items from being droped onto the sheet
+ - fixed weight calculation
+
 ## v0.3.3
  - fixed issue of registering wrapped function on every sheet opening
 

@@ -41,21 +41,30 @@ class InventoryPlus {
     }
     
     static replaceOnDropItem() {
-        let newOnDropItem = async function(event, data) {
+        let newOnDropItem = async function(event,data) {
             // dropping new item
-            if (data.actorId !== this.object.id || data.data === undefined) {
-                return oldOnDropItem.bind(this)(event, data);
+            if (data.actorId !== this.object.id || data.data === undefined) {  
+                const item = await Item.implementation.fromDropData(data);
+                const itemData = item.toJSON();
+                return this._onDropItemCreate(itemData);
             }
     
-            // droping item outside inventory list
+            // droping item outside inventory list, but ignore if already owned item
             let targetLi = $(event.target).parents('li')[0];
-            if (targetLi === undefined || targetLi.className === undefined) {
-                return oldOnDropItem.bind(this)(event, data);
+            if (targetLi === undefined || targetLi.className === undefined) {                  
+                if(data.actorId === this.object.id) {                      
+                    return;
+                } else {                                           
+                    const item = await Item.implementation.fromDropData(data);
+                    const itemData = item.toJSON();
+                    return this._onDropItemCreate(itemData);
+                    //return ActorSheet5eCharacter.prototype._onDropItem.bind(this)(event, data);
+                }                                
             }
-    
+                                     
             // doing actual stuff!!!
             let id = data.data._id;
-            let dropedItem = this.object.getOwnedItem(id);
+            let dropedItem = this.object.items.get(id);
             
             let targetType = '';
             let targetCss = InventoryPlus.getCSSName("sub-header");
@@ -63,7 +72,7 @@ class InventoryPlus {
                 targetType = $(targetLi).find('.item-control')[0].dataset.type;
             } else if (targetLi.className.trim().indexOf('item') !== -1) {
                 let itemId = targetLi.dataset.itemId;
-                let item = this.object.getOwnedItem(itemId);
+                let item = this.object.items.get(itemId);
                 targetType = this.inventoryPlus.getItemType(item.data);
             }
     
@@ -71,9 +80,10 @@ class InventoryPlus {
             let itemType = this.inventoryPlus.getItemType(data.data);
             if (itemType !== targetType) {
                 let categoryWeight = this.inventoryPlus.getCategoryItemWeight(targetType);
-                let itemWeight = dropedItem.data.totalWeight;
+                console.log(dropedItem)
+                let itemWeight = dropedItem.data.data.weight * dropedItem.data.data.quantity;
                 let maxWeight = Number(this.inventoryPlus.customCategorys[targetType].maxWeight ? this.inventoryPlus.customCategorys[targetType].maxWeight : 0);
-    
+                console.log(maxWeight,categoryWeight,itemWeight);
                 if (maxWeight == NaN || maxWeight <= 0 || maxWeight >= (categoryWeight + itemWeight)) {
                     await dropedItem.update({ 'flags.inventory-plus.category': targetType });
                     itemType = targetType;
@@ -443,7 +453,7 @@ class InventoryPlus {
         let weight = 0;
         for (let i of this.actor.items) {
             if (type === this.getItemType(i.data)) {
-                weight += i.data.totalWeight;
+                weight += i.data.data.weight * i.data.data.quantity;
             }
         }
         return weight;
