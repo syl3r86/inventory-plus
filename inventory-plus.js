@@ -1,5 +1,5 @@
 ﻿/**
- * @author Felix Müller aka syl3r86
+ * @author Felix Müller
  */
 
 import ActorSheet5eCharacter from "../../systems/dnd5e/module/actor/sheets/character.js";
@@ -7,50 +7,52 @@ import ActorSheet5eCharacter from "../../systems/dnd5e/module/actor/sheets/chara
 class InventoryPlus {
     
     static replaceGetData() {
-        let oldGetData = ActorSheet5eCharacter.prototype.getData;
+        if (typeof libWrapper === "function") {
+            libWrapper.register('inventory-plus', 'game.dnd5e.applications.ActorSheet5eCharacter.prototype.getData', function (wrapper, ...args) {
+                const sheetData = wrapper(...args);
 
-        ActorSheet5eCharacter.prototype.getData = function () {
-            let app = this;
-            let actor = this.actor;
+                let app = this;
+                let actor = this.actor;
+                let newInventory = InventoryPlus.processInventory(app, actor, sheetData.inventory);
+                sheetData.inventory = newInventory;
 
-            let data = oldGetData.bind(this)();
-            let newInventory = InventoryPlus.processInventory(app, actor, data.inventory);
-            data.inventory = newInventory;
+                sheetData.data.attributes.encumbrance.value = InventoryPlus.calculateWeight(sheetData.inventory, actor.data.data.currency);
+                sheetData.data.attributes.encumbrance.pct = sheetData.data.attributes.encumbrance.value / sheetData.data.attributes.encumbrance.max * 100;
 
-            data.data.attributes.encumbrance.value = InventoryPlus.calculateWeight(data.inventory, actor.data.data.currency);
-            data.data.attributes.encumbrance.pct = data.data.attributes.encumbrance.value / data.data.attributes.encumbrance.max * 100;
-            return data;
+                return sheetData;
+            },
+            "WRAPPER");
+        } else {
+            let oldGetData = ActorSheet5eCharacter.prototype.getData;
+    
+            ActorSheet5eCharacter.prototype.getData = function () {
+                let app = this;
+                let actor = this.actor;
+    
+                let data = oldGetData.bind(this)();
+                let newInventory = InventoryPlus.processInventory(app, actor, data.inventory);
+                data.inventory = newInventory;
+    
+                data.data.attributes.encumbrance.value = InventoryPlus.calculateWeight(data.inventory, actor.data.data.currency);
+                data.data.attributes.encumbrance.pct = data.data.attributes.encumbrance.value / data.data.attributes.encumbrance.max * 100;
+                return data;
+            }
         }
     }
-
-    replaceOnDrop() {
-        if (this.oldOnDrop === undefined) {
-            this.oldOnDrop = ActorSheet5eCharacter.prototype._onDrop;
-        }
-        let oldOnDrop = this.oldOnDrop;
-        ActorSheet5eCharacter.prototype._onDrop = async function (event) {
-            // TODO: implement category drag'n'drop
-            return oldOnDrop.bind(this)(event);
-        }
-    }
-
+    
     replaceOnDropItem() {
-        if (this.oldOnDropItem === undefined) {
-            this.oldOnDropItem = ActorSheet5eCharacter.prototype._onDropItem;
-        }
-        let oldOnDropItem = this.oldOnDropItem;
-        ActorSheet5eCharacter.prototype._onDropItem = async function (event, data) {
+        let newOnDropItem = async function(event, data) {
             // dropping new item
             if (data.actorId !== this.object.id || data.data === undefined) {
                 return oldOnDropItem.bind(this)(event, data);
             }
-
+    
             // droping item outside inventory list
             let targetLi = $(event.target).parents('li')[0];
             if (targetLi === undefined || targetLi.className === undefined) {
                 return oldOnDropItem.bind(this)(event, data);
             }
-
+    
             // doing actual stuff!!!
             let id = data.data._id;
             let dropedItem = this.object.getOwnedItem(id);
@@ -64,14 +66,14 @@ class InventoryPlus {
                 let item = this.object.getOwnedItem(itemId);
                 targetType = this.inventoryPlus.getItemType(item.data);
             }
-
+    
             // changing item list
             let itemType = this.inventoryPlus.getItemType(data.data);
             if (itemType !== targetType) {
                 let categoryWeight = this.inventoryPlus.getCategoryItemWeight(targetType);
                 let itemWeight = dropedItem.data.totalWeight;
                 let maxWeight = Number(this.inventoryPlus.customCategorys[targetType].maxWeight ? this.inventoryPlus.customCategorys[targetType].maxWeight : 0);
-
+    
                 if (maxWeight == NaN || maxWeight <= 0 || maxWeight >= (categoryWeight + itemWeight)) {
                     await dropedItem.update({ 'flags.inventory-plus.category': targetType });
                     itemType = targetType;
@@ -80,9 +82,9 @@ class InventoryPlus {
                     return;
                 }
             }
-
+    
             // reordering items
-
+    
             // Get the drag source and its siblings
             let source = dropedItem;
             let siblings = this.object.items.filter(i => {
@@ -93,7 +95,7 @@ class InventoryPlus {
             let dropTarget = event.target.closest(".item");
             let targetId = dropTarget ? dropTarget.dataset.itemId : null;
             let target = siblings.find(s => s.data._id === targetId);
-
+    
             // Perform the sort
             let sortUpdates = SortingHelpers.performIntegerSort(dropedItem, { target: target, siblings });
             let updateData = sortUpdates.map(u => {
@@ -101,12 +103,24 @@ class InventoryPlus {
                 update._id = u.target.data._id;
                 return update;
             });
-
-            // Perform the update
-            this.object.updateEmbeddedEntity("OwnedItem", updateData);
-        }
-    }
     
+            // Perform the update
+            this.object.updateEmbeddedDocuments("Item", updateData);
+        
+        }
+        if (typeof libWrapper === "function") {
+            libWrapper.register('inventory-plus', 'game.dnd5e.applications.ActorSheet5eCharacter.prototype._onDropItem', newOnDropItem,
+            "OVERRIDE");
+        } else {
+            if (this.oldOnDropItem === undefined) {
+                this.oldOnDropItem = ActorSheet5eCharacter.prototype._onDropItem;
+            }
+            let oldOnDropItem = this.oldOnDropItem;
+            ActorSheet5eCharacter.prototype._onDropItem = newOnDropItem;
+        }
+        
+    }
+
     static processInventory(app, actor, inventory) {
 
         if (app.inventoryPlus === undefined) {

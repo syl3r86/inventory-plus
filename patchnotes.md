@@ -1,3 +1,7 @@
+## v0.3.2
+ - fixed compabtibility issues by implementing libWrapper support
+ - fixed compability to 0.8.x foundry core version
+
 ## v0.3.1
  - fixed compability with dnd5e v0.9.9 and newer
 
