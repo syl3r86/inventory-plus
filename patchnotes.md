@@ -1,3 +1,6 @@
+## v0.3.3
+ - fixed issue of registering wrapped function on every sheet opening
+
 ## v0.3.2
  - fixed compabtibility issues by implementing libWrapper support
  - fixed compability to 0.8.x foundry core version
