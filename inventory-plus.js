@@ -354,7 +354,7 @@ class InventoryPlus {
                 })
             }
         }
-        await this.actor.updateEmbeddedEntity('OwnedItem', changedItems);
+        await this.actor.updateEmbeddedDocuments('Item', changedItems);
 
         delete this.customCategorys[catType];
         let deleteKey = `-=${catType}`
@@ -465,6 +465,7 @@ class InventoryPlus {
             let section = inventory[id];
             if (section.ignoreWeight !== true) {
                 for (let i of section.items) {
+                    console.log(i);
                     customWeight += i.totalWeight;
                 }
             }

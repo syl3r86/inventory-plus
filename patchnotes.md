@@ -1,3 +1,6 @@
+## v0.3.5
+ - fixed even more bugs (deleting of custom categorys)
+
 ## v0.3.4
  - fixed a bug preventing new items from being droped onto the sheet
  - fixed weight calculation
