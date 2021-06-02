@@ -40,7 +40,7 @@ class InventoryPlus {
         }
     }
     
-    replaceOnDropItem() {
+    static replaceOnDropItem() {
         let newOnDropItem = async function(event, data) {
             // dropping new item
             if (data.actorId !== this.object.id || data.data === undefined) {
@@ -133,8 +133,6 @@ class InventoryPlus {
     init(actor, inventory) {
         this.actor = actor;
         this.initCategorys();
-        //this.replaceOnDrop();
-        this.replaceOnDropItem();
     }
 
     initCategorys() {
@@ -496,8 +494,13 @@ class InventoryPlus {
 
 Hooks.on('ready', () => {
     InventoryPlus.replaceGetData();
+
+    InventoryPlus.replaceOnDropItem();
+
 });
 
 Hooks.on(`renderActorSheet5eCharacter`, (app, html, data) => {
     app.inventoryPlus.addInventoryFunctions(html);
+
+
 });
