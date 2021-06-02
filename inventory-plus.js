@@ -465,7 +465,7 @@ class InventoryPlus {
             let section = inventory[id];
             if (section.ignoreWeight !== true) {
                 for (let i of section.items) {
-                    customWeight += i.totalWeight;
+                    customWeight += i.data.data.weight * i.data.data.quantity;
                 }
             }
             if (Number(section.ownWeight) > 0) {
