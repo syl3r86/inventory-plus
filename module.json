@@ -8,9 +8,9 @@
 	"esmodules": ["./inventory-plus.js"],
 	"styles": ["inventory-plus.css"],
 	"packs": [],
-    "url": "https://github.com/syl3r86/inventory-plus",
-    "manifest": "https://raw.githubusercontent.com/syl3r86/inventory-plus/master/module.json",
-    "download": "https://github.com/syl3r86/inventory-plus/archive/master.zip",
+    "url": "https://github.com/ZeroXNoxus/inventory-plus",
+    "manifest": "https://raw.githubusercontent.com/ZeroXNoxus/inventory-plus/master/module.json",
+    "download": "https://github.com/ZeroXNoxus/inventory-plus/archive/refs/heads/master.zip",
     "minimumCoreVersion": "0.8.6",
-    "compatibleCoreVersion": "0.8.6"
+    "compatibleCoreVersion": "0.8.8"
 }
