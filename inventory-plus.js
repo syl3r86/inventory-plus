@@ -477,7 +477,11 @@ class InventoryPlus {
         let coinWeight = 0
         if (game.settings.get("dnd5e", "currencyWeight")) {
             let numCoins = Object.values(currency).reduce((val, denom) => val += Math.max(denom, 0), 0);
-            coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight) / 10;
+            if (game.settings.get("dnd5e", "metricWeightUnits")) {
+                coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight.metric) / 10;
+            } else {
+                coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight.imperial) / 10;
+            }
         }
         customWeight += coinWeight;
 
