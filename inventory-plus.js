@@ -80,9 +80,11 @@ class InventoryPlus {
             let itemType = this.inventoryPlus.getItemType(data.data);
             if (itemType !== targetType) {
                 let categoryWeight = this.inventoryPlus.getCategoryItemWeight(targetType);
-                let itemWeight = dropedItem.data.data.weight * dropedItem.data.data.quantity;
+                //console.log(dropedItem);
+				let itemWeight = dropedItem.data.data.weight * dropedItem.data.data.quantity;
                 let maxWeight = Number(this.inventoryPlus.customCategorys[targetType].maxWeight ? this.inventoryPlus.customCategorys[targetType].maxWeight : 0);
-                if (maxWeight == NaN || maxWeight <= 0 || maxWeight >= (categoryWeight + itemWeight)) {
+                //console.log(maxWeight,categoryWeight,itemWeight);
+				if (maxWeight == NaN || maxWeight <= 0 || maxWeight >= (categoryWeight + itemWeight)) {
                     await dropedItem.update({ 'flags.inventory-plus.category': targetType });
                     itemType = targetType;
                 } else {
@@ -463,6 +465,7 @@ class InventoryPlus {
             let section = inventory[id];
             if (section.ignoreWeight !== true) {
                 for (let i of section.items) {
+					//console.log(i);
                     customWeight += i.totalWeight;
                 }
             }
