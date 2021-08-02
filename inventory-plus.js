@@ -5,7 +5,7 @@
 import ActorSheet5eCharacter from "../../systems/dnd5e/module/actor/sheets/character.js";
 
 class InventoryPlus {
-    
+
     static replaceGetData() {
         if (typeof libWrapper === "function") {
             libWrapper.register('inventory-plus', 'game.dnd5e.applications.ActorSheet5eCharacter.prototype.getData', function (wrapper, ...args) {
@@ -21,51 +21,51 @@ class InventoryPlus {
 
                 return sheetData;
             },
-            "WRAPPER");
+                "WRAPPER");
         } else {
             let oldGetData = ActorSheet5eCharacter.prototype.getData;
-    
+
             ActorSheet5eCharacter.prototype.getData = function () {
                 let app = this;
                 let actor = this.actor;
-    
+
                 let data = oldGetData.bind(this)();
                 let newInventory = InventoryPlus.processInventory(app, actor, data.inventory);
                 data.inventory = newInventory;
-    
+
                 data.data.attributes.encumbrance.value = InventoryPlus.calculateWeight(data.inventory, actor.data.data.currency);
                 data.data.attributes.encumbrance.pct = data.data.attributes.encumbrance.value / data.data.attributes.encumbrance.max * 100;
                 return data;
             }
         }
     }
-    
+
     static replaceOnDropItem() {
-        let newOnDropItem = async function(event,data) {
+        let newOnDropItem = async function (event, data) {
             // dropping new item
-            if (data.actorId !== this.object.id || data.data === undefined) {  
+            if (data.actorId !== this.object.id || data.data === undefined) {
                 const item = await Item.implementation.fromDropData(data);
                 const itemData = item.toJSON();
                 return this._onDropItemCreate(itemData);
             }
-    
+
             // droping item outside inventory list, but ignore if already owned item
             let targetLi = $(event.target).parents('li')[0];
-            if (targetLi === undefined || targetLi.className === undefined) {                  
-                if(data.actorId === this.object.id) {                      
+            if (targetLi === undefined || targetLi.className === undefined) {
+                if (data.actorId === this.object.id) {
                     return;
-                } else {                                           
+                } else {
                     const item = await Item.implementation.fromDropData(data);
                     const itemData = item.toJSON();
                     return this._onDropItemCreate(itemData);
                     //return ActorSheet5eCharacter.prototype._onDropItem.bind(this)(event, data);
-                }                                
+                }
             }
-                                     
+
             // doing actual stuff!!!
             let id = data.data._id;
             let dropedItem = this.object.items.get(id);
-            
+
             let targetType = '';
             let targetCss = InventoryPlus.getCSSName("sub-header");
             if (targetLi.className.trim().indexOf(targetCss) !== -1) {
@@ -75,16 +75,16 @@ class InventoryPlus {
                 let item = this.object.items.get(itemId);
                 targetType = this.inventoryPlus.getItemType(item.data);
             }
-    
+
             // changing item list
             let itemType = this.inventoryPlus.getItemType(data.data);
             if (itemType !== targetType) {
                 let categoryWeight = this.inventoryPlus.getCategoryItemWeight(targetType);
                 //console.log(dropedItem);
-				let itemWeight = dropedItem.data.data.weight * dropedItem.data.data.quantity;
+                let itemWeight = dropedItem.data.data.weight * dropedItem.data.data.quantity;
                 let maxWeight = Number(this.inventoryPlus.customCategorys[targetType].maxWeight ? this.inventoryPlus.customCategorys[targetType].maxWeight : 0);
                 //console.log(maxWeight,categoryWeight,itemWeight);
-				if (maxWeight == NaN || maxWeight <= 0 || maxWeight >= (categoryWeight + itemWeight)) {
+                if (maxWeight == NaN || maxWeight <= 0 || maxWeight >= (categoryWeight + itemWeight)) {
                     await dropedItem.update({ 'flags.inventory-plus.category': targetType });
                     itemType = targetType;
                 } else {
@@ -92,9 +92,9 @@ class InventoryPlus {
                     return;
                 }
             }
-    
+
             // reordering items
-    
+
             // Get the drag source and its siblings
             let source = dropedItem;
             let siblings = this.object.items.filter(i => {
@@ -105,7 +105,7 @@ class InventoryPlus {
             let dropTarget = event.target.closest(".item");
             let targetId = dropTarget ? dropTarget.dataset.itemId : null;
             let target = siblings.find(s => s.data._id === targetId);
-    
+
             // Perform the sort
             let sortUpdates = SortingHelpers.performIntegerSort(dropedItem, { target: target, siblings });
             let updateData = sortUpdates.map(u => {
@@ -113,14 +113,14 @@ class InventoryPlus {
                 update._id = u.target.data._id;
                 return update;
             });
-    
+
             // Perform the update
             this.object.updateEmbeddedDocuments("Item", updateData);
-        
+
         }
         if (typeof libWrapper === "function") {
             libWrapper.register('inventory-plus', 'game.dnd5e.applications.ActorSheet5eCharacter.prototype._onDropItem', newOnDropItem,
-            "OVERRIDE");
+                "OVERRIDE");
         } else {
             if (this.oldOnDropItem === undefined) {
                 this.oldOnDropItem = ActorSheet5eCharacter.prototype._onDropItem;
@@ -128,7 +128,7 @@ class InventoryPlus {
             let oldOnDropItem = this.oldOnDropItem;
             ActorSheet5eCharacter.prototype._onDropItem = newOnDropItem;
         }
-        
+
     }
 
     static processInventory(app, actor, inventory) {
@@ -150,11 +150,11 @@ class InventoryPlus {
         if (actorFlag === undefined) {
             this.customCategorys = {
                 weapon: { label: "DND5E.ItemTypeWeaponPl", dataset: { type: "weapon" }, sortFlag: 1000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false },
-                equipment: { label: "DND5E.ItemTypeEquipmentPl", dataset: { type: "equipment" }, sortFlag: 2000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  },
-                consumable: { label: "DND5E.ItemTypeConsumablePl", dataset: { type: "consumable" }, sortFlag: 3000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  },
-                tool: { label: "DND5E.ItemTypeToolPl", dataset: { type: "tool" }, sortFlag: 4000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  },
-                backpack: { label: "DND5E.ItemTypeContainerPl", dataset: { type: "backpack" }, sortFlag: 5000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  },
-                loot: { label: "DND5E.ItemTypeLootPl", dataset: { type: "loot" }, sortFlag: 6000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false  }
+                equipment: { label: "DND5E.ItemTypeEquipmentPl", dataset: { type: "equipment" }, sortFlag: 2000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false },
+                consumable: { label: "DND5E.ItemTypeConsumablePl", dataset: { type: "consumable" }, sortFlag: 3000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false },
+                tool: { label: "DND5E.ItemTypeToolPl", dataset: { type: "tool" }, sortFlag: 4000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false },
+                backpack: { label: "DND5E.ItemTypeContainerPl", dataset: { type: "backpack" }, sortFlag: 5000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false },
+                loot: { label: "DND5E.ItemTypeLootPl", dataset: { type: "loot" }, sortFlag: 6000, ignoreWeight: false, maxWeight: 0, ownWeight: 0, collapsed: false }
             };
         } else {
             this.customCategorys = duplicate(actorFlag);
@@ -231,7 +231,7 @@ class InventoryPlus {
                 this.saveCategorys();
             });
             header.find('h3').before(toggleBtn);
-            
+
             // reorder category
             if (this.getLowestSortFlag() !== this.customCategorys[type].sortFlag) {
                 let upBtn = $(`<a class="inv-plus-stuff shuffle-up" title="Move category up"><i class="fas fa-chevron-up"></i></a>`).click(() => this.changeCategoryOrder(type, true));
@@ -350,7 +350,7 @@ class InventoryPlus {
                 //await item.unsetFlag('inventory-plus', 'category');
                 changedItems.push({
                     _id: item.id,
-                    '-=flags.inventory-plus':null
+                    '-=flags.inventory-plus': null
                 })
             }
         }
@@ -358,13 +358,13 @@ class InventoryPlus {
 
         delete this.customCategorys[catType];
         let deleteKey = `-=${catType}`
-        this.actor.setFlag('inventory-plus', 'categorys', { [deleteKey]:null });
+        this.actor.setFlag('inventory-plus', 'categorys', { [deleteKey]: null });
     }
 
     changeCategoryOrder(movedType, up) {
         let targetType = movedType;
         let currentSortFlag = 0;
-        if(!up) currentSortFlag = 999999999;
+        if (!up) currentSortFlag = 999999999;
         for (let id in this.customCategorys) {
             let currentCategory = this.customCategorys[id];
             if (up) {
@@ -378,7 +378,7 @@ class InventoryPlus {
                     currentSortFlag = currentCategory.sortFlag;
                 }
             }
-        } 
+        }
 
         if (movedType !== targetType) {
             let oldMovedSortFlag = this.customCategorys[movedType].sortFlag;
@@ -436,7 +436,7 @@ class InventoryPlus {
         do {
             id = Math.random().toString(36).substring(7);
             iterations--;
-        } while (this.customCategorys[id] !== undefined && iterations > 0 && id.length>=5)
+        } while (this.customCategorys[id] !== undefined && iterations > 0 && id.length >= 5)
 
         return id;
     }
@@ -465,7 +465,7 @@ class InventoryPlus {
             let section = inventory[id];
             if (section.ignoreWeight !== true) {
                 for (let i of section.items) {
-					//console.log(i);
+                    //console.log(i);
                     customWeight += i.totalWeight;
                 }
             }
@@ -476,12 +476,12 @@ class InventoryPlus {
 
         let coinWeight = 0
         if (game.settings.get("dnd5e", "currencyWeight")) {
-			let numCoins = Object.values(currency).reduce((val, denom) => val += Math.max(denom, 0), 0);
-			if(game.settings.get("dnd5e", "metricWeightUnits")){
-				coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight.metric) / 10;
-			}else{
-			    coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight.imperial) / 10;
-			}
+            let numCoins = Object.values(currency).reduce((val, denom) => val += Math.max(denom, 0), 0);
+            if (game.settings.get("dnd5e", "metricWeightUnits")) {
+                coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight.metric) / 10;
+            } else {
+                coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight.imperial) / 10;
+            }
         }
         customWeight += coinWeight;
 
