@@ -80,10 +80,9 @@ class InventoryPlus {
             let itemType = this.inventoryPlus.getItemType(data.data);
             if (itemType !== targetType) {
                 let categoryWeight = this.inventoryPlus.getCategoryItemWeight(targetType);
-                console.log(dropedItem)
                 let itemWeight = dropedItem.data.data.weight * dropedItem.data.data.quantity;
                 let maxWeight = Number(this.inventoryPlus.customCategorys[targetType].maxWeight ? this.inventoryPlus.customCategorys[targetType].maxWeight : 0);
-                console.log(maxWeight,categoryWeight,itemWeight);
+
                 if (maxWeight == NaN || maxWeight <= 0 || maxWeight >= (categoryWeight + itemWeight)) {
                     await dropedItem.update({ 'flags.inventory-plus.category': targetType });
                     itemType = targetType;
@@ -465,7 +464,6 @@ class InventoryPlus {
             let section = inventory[id];
             if (section.ignoreWeight !== true) {
                 for (let i of section.items) {
-                    console.log(i);
                     customWeight += i.totalWeight;
                 }
             }
@@ -477,7 +475,11 @@ class InventoryPlus {
         let coinWeight = 0
         if (game.settings.get("dnd5e", "currencyWeight")) {
             let numCoins = Object.values(currency).reduce((val, denom) => val += Math.max(denom, 0), 0);
-            coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight) / 10;
+            if (game.settings.get("dnd5e", "metricWeightUnits")) {
+                coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight.metric) / 10;
+            } else {
+                coinWeight = Math.round((numCoins * 10) / CONFIG.DND5E.encumbrance.currencyPerWeight.imperial) / 10;
+            }
         }
         customWeight += coinWeight;
 

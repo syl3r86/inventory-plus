@@ -1,3 +1,6 @@
+## v0.4
+ - fixed weight calculation
+
 ## v0.3.5
  - fixed even more bugs (deleting of custom categorys)
 
