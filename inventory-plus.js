@@ -464,7 +464,6 @@ class InventoryPlus {
             let section = inventory[id];
             if (section.ignoreWeight !== true) {
                 for (let i of section.items) {
-                    console.log(i);
                     customWeight += i.totalWeight;
                 }
             }
